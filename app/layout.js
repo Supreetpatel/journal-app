@@ -15,14 +15,14 @@ export default function RootLayout({ children }) {
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${inter.className} bg-gradient-to-b from-orange-50 via-amber-50 to-orange-50`}
+          className={`${inter.className} bg-gradient-to-b from-orange-50 via-amber-50 to-orange-50 min-h-screen flex flex-col`}
         >
           <div className="bg-[url('/bg.jpg')] opacity-50 fixed -z-10 inset-0" />
           <Header />
-          <main>{children}</main>
-          <footer className="bg-amber-100 py-12 bg-opacity-10">
-            <div className="mx-auto px-4 text-center text-gray-900">
-              <p>Made with ❤️ by supreet</p>
+          <main className="flex-grow">{children}</main>
+          <footer className="bg-orange-300 py-12 bg-opacity-10">
+            <div className="container mx-auto px-4 text-center text-gray-900">
+              <p>Made with 💗 by Supreet Patel</p>
             </div>
           </footer>
         </body>
