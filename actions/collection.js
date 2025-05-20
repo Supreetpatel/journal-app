@@ -1,18 +1,14 @@
 "use server";
-
-import { MOODS } from "@/app/lib/moods";
 import { auth } from "@clerk/nextjs/server";
-import { getPixabayImage } from "./public";
-import { revalidatePath } from "next/cache";
-import { db } from "@/lib/prisma";
 import { request } from "@arcjet/next";
 import aj from "@/lib/arcjet";
+import { db } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
-export async function createJournalEntry(data) {
+export async function createCollection(data) {
   try {
     const { userId } = await auth();
     if (!userId) throw new Error("User not authenticated");
-    //Arcjet Rate Limiting factor
     const req = await request();
     const decision = await aj.protect(req, { userId, requested: 1 });
     if (decision.isDenied()) {
@@ -37,28 +33,32 @@ export async function createJournalEntry(data) {
     if (!user) {
       throw new Error("User not found");
     }
-    const mood = MOODS[data.mood.toUpperCase()];
-    if (!mood) throw new Error("Invalid mood");
-    const moodImageUrl = await getPixabayImage(data.moodQuery);
-    const entry = await db.entry.create({
+    const collection = await db.collection.create({
       data: {
-        title: data.title,
-        content: data.content,
-        mood: mood.id,
-        moodScore: mood.score,
-        moodImageUrl,
-        userId: user.id,
-        collectionId: data.collectionId || null,
-      },
-    });
-    await db.draft.deleteMany({
-      where: {
+        name: data.name,
+        description: data.description,
         userId: user.id,
       },
     });
     revalidatePath("/dashboard");
-    return entry;
+    return collection;
   } catch (error) {
     throw new Error(error.message);
   }
+}
+
+export async function getCollections() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+  });
+  if (!user) {
+    throw new Error("User not found");
+  }
+  const collections = await db.collection.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
+  return collections;
 }
