@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import "react-quill-new/dist/quill.snow.css";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,21 +20,40 @@ import useFetch from "@/hooks/use-fetch";
 import { createJournalEntry } from "@/actions/journal";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { createCollection, getCollections } from "@/actions/collection";
+import CollectionForm from "@/components/CollectionForm";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 const JournalEntryPage = () => {
+  const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
+
   const {
     loading: actionLoading,
     fn: actionFn,
     data: actionResult,
   } = useFetch(createJournalEntry);
+
+  const {
+    loading: colletionsLoading,
+    fn: fetchCollections,
+    data: collections,
+  } = useFetch(getCollections);
+
+  const {
+    loading: createCollectionLoading,
+    fn: createCollectionFn,
+    data: createdCollection,
+  } = useFetch(createCollection);
+
   const router = useRouter();
+
   const {
     register,
     handleSubmit,
     control,
     getValues,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(journalSchema),
@@ -45,7 +64,11 @@ const JournalEntryPage = () => {
       collectionId: "",
     },
   });
-  const isLoading = actionLoading;
+
+  useEffect(() => {
+    fetchCollections();
+  }, []);
+
   useEffect(() => {
     if (actionResult && !actionLoading) {
       router.push(
@@ -65,6 +88,21 @@ const JournalEntryPage = () => {
       moodQuery: mood.pixabayQuery,
     });
   });
+
+  useEffect(() => {
+    if (createdCollection) {
+      setIsCollectionDialogOpen(false);
+      fetchCollections();
+      setValue("collectionId", createdCollection.id);
+      toast.success(`Collection ${createdCollection.name} created!`);
+    }
+  }, [createdCollection]);
+
+  const handleCreateCollection = async (data) => {
+    createCollectionFn(data);
+  };
+
+  const isLoading = actionLoading || colletionsLoading;
 
   return (
     <div className="py-8">
@@ -98,13 +136,15 @@ const JournalEntryPage = () => {
                   <SelectValue placeholder="Select a mood..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(MOODS).map((mood) => (
-                    <SelectItem key={mood.id} value={mood.id}>
-                      <span className="flex items-center gap-2">
-                        {mood.emoji} {mood.label}
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {Object.values(MOODS).map((mood) => {
+                    return (
+                      <SelectItem key={mood.id} value={mood.id}>
+                        <span className="flex items-center gap-2">
+                          {mood.emoji} {mood.label}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             )}
@@ -152,18 +192,32 @@ const JournalEntryPage = () => {
             name="collectionId"
             control={control}
             render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
-                <SelectTrigger className={errors.mood ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select a mood..." />
+              <Select
+                onValueChange={(value) => {
+                  if (value === "new") {
+                    setIsCollectionDialogOpen(true);
+                  } else {
+                    field.onChange(value);
+                  }
+                }}
+                value={field.value}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a collection..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(MOODS).map((mood) => (
-                    <SelectItem key={mood.id} value={mood.id}>
-                      <span className="flex items-center gap-2">
-                        {mood.emoji} {mood.label}
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {collections?.map((collection) => {
+                    return (
+                      <SelectItem key={collection.id} value={collection.id}>
+                        {collection.name}
+                      </SelectItem>
+                    );
+                  })}
+                  <SelectItem value="new">
+                    <span className="text-orange-600">
+                      + Create New Collection
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -175,11 +229,18 @@ const JournalEntryPage = () => {
           )}
         </div>
         <div className="space-y-4 flex">
-          <Button type="submit" variant="journal">
+          <Button type="submit" variant="journal" disabled={actionLoading}>
             Publish
           </Button>
         </div>
       </form>
+
+      <CollectionForm
+        loading={createCollectionLoading}
+        onSuccess={handleCreateCollection}
+        open={isCollectionDialogOpen}
+        setOpen={setIsCollectionDialogOpen}
+      />
     </div>
   );
 };
