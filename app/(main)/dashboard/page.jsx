@@ -2,6 +2,7 @@ import { getCollections } from "@/actions/collection";
 import { getJournalEntries } from "@/actions/journal";
 import React from "react";
 import Collections from "./_components/Collections";
+import MoodAnalytics from "./_components/MoodAnalytics";
 
 const Dashboard = async () => {
   const collections = await getCollections();
@@ -19,7 +20,9 @@ const Dashboard = async () => {
   );
   return (
     <div className="px-4 py-4 space-y-8">
-      <section className="space-y-4"></section>
+      <section className="space-y-4">
+        <MoodAnalytics />
+      </section>
       <Collections
         collections={collections}
         entriesByCollection={entriesByCollection}

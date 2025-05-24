@@ -1,7 +1,9 @@
 "use client";
-import { Plus } from "lucide-react";
+
 import Link from "next/link";
-import React from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Plus } from "lucide-react";
+import { getMoodById } from "@/app/lib/moods";
 
 const colorSchemes = {
   unorganized: {
@@ -24,6 +26,13 @@ const FolderTab = ({ colorClass }) => (
   />
 );
 
+const EntryPreview = ({ entry }) => (
+  <div className="bg-white/50 p-2 rounded text-sm truncate">
+    <span className="mr-2">{getMoodById(entry.mood)?.emoji}</span>
+    {entry.title}
+  </div>
+);
+
 const CollectionPreview = ({
   id,
   name,
@@ -36,7 +45,7 @@ const CollectionPreview = ({
     return (
       <button
         onClick={onCreateNew}
-        className="relative group h-[200px] cursor-pointer"
+        className="group relative h-[200px] cursor-pointer"
       >
         <FolderTab colorClass={colorSchemes["createCollection"].bg} />
         <div
@@ -50,8 +59,49 @@ const CollectionPreview = ({
       </button>
     );
   }
+
   return (
-    <Link href={`/collection/${isUnorganized ? "unorganized" : id}`}></Link>
+    <Link
+      href={`/collection/${isUnorganized ? "unorganized" : id}`}
+      className="group relative"
+    >
+      <FolderTab
+        colorClass={
+          colorSchemes[isUnorganized ? "unorganized" : "collection"].tab
+        }
+      />
+      <div
+        className={`relative rounded-lg p-6 shadow-md hover:shadow-lg transition-all ${
+          colorSchemes[isUnorganized ? "unorganized" : "collection"].bg
+        }`}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-2xl">{isUnorganized ? "📂" : "📁"}</span>
+          <h3 className="text-lg font-semibold truncate">{name}</h3>
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>{entries.length} entries</span>
+            {entries.length > 0 && (
+              <span>
+                {formatDistanceToNow(new Date(entries[0].createdAt), {
+                  addSuffix: true,
+                })}
+              </span>
+            )}
+          </div>
+          <div className="space-y-2 mt-4">
+            {entries.length > 0 ? (
+              entries
+                .slice(0, 2)
+                .map((entry) => <EntryPreview key={entry.id} entry={entry} />)
+            ) : (
+              <p className="text-sm text-gray-500 italic">No entries yet</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 };
 
