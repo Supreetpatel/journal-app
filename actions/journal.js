@@ -116,3 +116,36 @@ export async function getJournalEntries({
     };
   }
 }
+
+export async function getJournalEntry(id) {
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("User not authenticated");
+    const user = await db.user.findUnique({
+      where: {
+        clerkUserId: userId,
+      },
+    });
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const entry = await db.entry.findFirst({
+      where: {
+        id,
+        userId: user.id,
+      },
+      include: {
+        collection: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+    if (!entry) throw new Error("Entry not found");
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
