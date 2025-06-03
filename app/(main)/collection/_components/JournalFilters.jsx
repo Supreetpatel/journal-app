@@ -1,6 +1,7 @@
 "use client";
 
 import { MOODS } from "@/app/lib/moods";
+import EntryCard from "@/components/EntryCard";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -17,15 +18,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { Calendar1Icon, Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const JournalFilters = ({ entries }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectMood, setSelectMood] = useState("");
   const [date, setDate] = useState("");
   const [filteredEntries, setFilteredEntries] = useState(entries);
+
+  useEffect(() => {
+    let filtered = entries;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (entry) =>
+          entry.title.toLowerCase().includes(query) ||
+          entry.content.toLowerCase().includes(query)
+      );
+    }
+    if (selectMood) {
+      filtered = filtered.filter((entry) => entry.mood === selectMood);
+    }
+    if (date) {
+      filtered = filtered.filter((entry) =>
+        isSameDay(new Date(entry.createdAt), date)
+      );
+    }
+    setFilteredEntries(filtered);
+  }, [entries, searchQuery, selectMood, date]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -95,6 +117,17 @@ const JournalFilters = ({ entries }) => {
       <div className="text-sm text-gray-500">
         Showing {filteredEntries.length} of {entries.length} entries
       </div>
+      {filteredEntries.length === 0 ? (
+        <div className="text-center p-8">
+          <p className="text-gray-500">No entries found</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {filteredEntries.map((map) => (
+            <EntryCard key={entry.id} entry={entry} />
+          ))}
+        </div>
+      )}
     </>
   );
 };

@@ -1,12 +1,21 @@
-import { getCollection } from "@/actions/collection";
+import { getCollections } from "@/actions/collection";
 import { getJournalEntries } from "@/actions/journal";
 import DeleteCollectionDialog from "../_components/DeleteCollection";
 import JournalFilters from "../_components/JournalFilters";
 
 const CollectionPage = async ({ params }) => {
-  const { collectionId } = params;
+  const { collectionId } = await params;
   const entries = await getJournalEntries({ collectionId });
-  const collection = getCollection(collectionId);
+  let collection = null;
+  if (collectionId !== "unorganized") {
+    const collections = await getCollections();
+    if (collections && Array.isArray(collections)) {
+      collection = collections.find((c) => c.id === collectionId);
+    }
+    if (!collection) {
+      console.error(`Collection with ID "${collectionId}" not found.`);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -17,10 +26,10 @@ const CollectionPage = async ({ params }) => {
               ? "Unorganized Entries"
               : collection?.name || "Collection"}
           </h1>
-          {collection && entries.data?.entries && (
+          {collection && (
             <DeleteCollectionDialog
               collection={collection}
-              entriesCount={entries.data.entries.length}
+              entriesCount={entries?.data?.entries.length}
             />
           )}
         </div>

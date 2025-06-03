@@ -19,11 +19,9 @@ const Collections = ({ collections = [], entriesByCollection }) => {
   useEffect(() => {
     if (createdCollection) {
       setIsCollectionDialogOpen(false);
-      fetchCollections(); // Refresh collections list
+      collections();
       toast.success(`Collection ${createdCollection.name} created!`);
     }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createdCollection, createCollectionLoading]);
 
   const handleCreateCollection = async (data) => {
@@ -36,13 +34,10 @@ const Collections = ({ collections = [], entriesByCollection }) => {
     <section id="collections" className="space-y-6">
       <h2 className="text-3xl font-bold gradient-title">Collections</h2>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Create New Collection Button */}
         <CollectionPreview
           isCreateNew={true}
           onCreateNew={() => setIsCollectionDialogOpen(true)}
         />
-
-        {/* Unorganized Collection */}
         {entriesByCollection?.unorganized?.length > 0 && (
           <CollectionPreview
             name="Unorganized"
@@ -50,16 +45,18 @@ const Collections = ({ collections = [], entriesByCollection }) => {
             isUnorganized={true}
           />
         )}
+        {collections?.map((collection) => {
+          if (!collection) return null;
 
-        {/* User Collections */}
-        {collections?.map((collection) => (
-          <CollectionPreview
-            key={collection.id}
-            id={collection.id}
-            name={collection.name}
-            entries={entriesByCollection?.[collection.id] || []}
-          />
-        ))}
+          return (
+            <CollectionPreview
+              key={collection.id}
+              id={collection.id}
+              name={collection.name}
+              entries={entriesByCollection?.[collection.id] || []}
+            />
+          );
+        })}
 
         <CollectionForm
           loading={createCollectionLoading}
